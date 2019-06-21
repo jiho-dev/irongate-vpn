@@ -197,7 +197,23 @@ ah(51)
 udp 500,4500
 icmp all
 
-8. 참고 링크
+8. windows 10 
+
+8-1. root인증서 추가
+mmc.exe 실행
+파일 > 스냅인 추가/삭제 
+가능한 스냅인 에서 인증서 선택 > 추가 
+컴퓨터 계정 선택 > 다음 > 로컬 컴퓨터 > 마침
+인증서(로컬컴퓨터) 선택 > 확인 
+신뢰할수있는 인증기관 > 인증서 > 기타작업 > 모든 작업 > 가져오기 > 다음 > 파일 선택 > 다음 > 마침
+
+8-2. disbale split tunnel
+* 네트웍 디바이스 속성
+* 네트워킹 속성 > ipv4 속성 > 고급 > IP 설정 탭 > 원격 네트워크에 기본 게이트웨이 사용 선택
+* 자동 매트릭 선택
+
+
+9. 참고 링크
 https://kimtc.tistory.com/21
 https://github.com/jawj/IKEv2-setup/blob/master/setup.sh
 strongswan client 설정 방법: http://coreavpn.net/docs/droid.htm
