@@ -1,0 +1,205 @@
+
+strongswan 설치 순서
+
+참조 사이드: https://www.digitalocean.com/community/tutorials/how-to-set-up-an-ikev2-vpn-server-with-strongswan-on-ubuntu-18-04-2
+
+1. 패키지 설치
+apt update
+# IPSEC 설치
+apt install strongswan strongswan-pki libcharon-extra-plugins libstrongswan-extra-plugins
+
+# utility
+apt install rsyslog inetutils-ping
+
+# 무료 인증서: let's encrypt
+apt install certbot
+
+
+2. 인증서 만들기
+
+2-1. self sign 인증서: gen_selfsign_cert.sh 파일로 생성
+mkdir -p ~/pki/{cacerts,certs,private}
+chmod 700 ~/pki
+ipsec pki --gen --type rsa --size 4096 --outform pem > ~/pki/private/ca-key.pem
+ipsec pki --self --ca --lifetime 3650 --in ~/pki/private/ca-key.pem  --type rsa --dn "CN=VPN root CA" --outform pem > ~/pki/cacerts/ca-cert.pem
+ipsec pki --gen --type rsa --size 4096 --outform pem > ~/pki/private/server-key.pem
+ipsec pki --pub --in ~/pki/private/server-key.pem --type rsa | ipsec pki --issue --lifetime 1825 --cacert ~/pki/cacerts/ca-cert.pem --cakey ~/pki/private/ca-key.pem --dn "CN=172.30.1.62" --san "172.30.1.62" --flag serverAuth --flag ikeIntermediate --outform pem >  ~/pki/certs/server-cert.pem
+sudo cp -r ~/pki/* /etc/ipsec.d/
+
+2-2. 공짜 인증서(let's encrypt): gen_free_cert.sh 파일로 생성
+DNS="irongatevpn.p-e.kr"
+certbot certonly --standalone  -d $DNS
+cp /etc/letsencrypt/live/$DNS/cert.pem /etc/ipsec.d/certs/
+cp /etc/letsencrypt/live/$DNS/privkey.pem /etc/ipsec.d/private/
+cp /etc/letsencrypt/live/$DNS/fullchain.pem /etc/ipsec.d/cacerts/
+cp /etc/letsencrypt/live/$DNS/chain.pem /etc/ipsec.d/cacerts/
+
+
+3. ipsec 설정
+
+3-1. /etc/ipsec.conf
+# ipsec.conf - strongSwan IPsec configuration file
+# basic configuration
+
+config setup
+#    strictcrlpolicy=yes
+#    charondebug="ike 1, knl 1, cfg 0"
+    charondebug="ike 2, knl 2, cfg 2"
+    uniqueids=no
+
+# Add connections here.
+
+conn sample
+#    auto=start
+    auto=add
+    authby=secret
+    compress=no
+    type=tunnel
+    keyexchange=ikev2
+    fragmentation=yes
+    forceencaps=yes
+    #ike=aes256-sha1-modp1024,3des-sha1-modp1024!,aes256-sha2_256
+    ike=aes256gcm16-sha256-ecp521,aes256-sha256-ecp384,aes256-sha1-modp1024,aes128-sha1-modp1024!
+    ikelifetime=28800s #Time before re authentication of keys
+    esp=aes256-sha1,3des-sha1!
+    dpdaction=clear
+    dpddelay=300s
+    rekey=no
+    left=172.30.1.61
+    #leftid=172.30.1.15
+    leftsubnet=192.168.1.0/24
+    right=172.30.1.62
+    #rightid=%any
+    rightsubnet=192.168.2.0/24
+    #rightdns=8.8.8.8,8.8.4.4
+    #rightsourceip=10.10.10.0/24
+
+conn mobile
+    auto=add
+    compress=no
+    type=tunnel
+    keyexchange=ikev2
+    fragmentation=yes
+    forceencaps=yes
+    ike=aes256-sha1-modp1024
+    #ike=aes256gcm16-sha256-ecp521,aes256-sha256-ecp384,aes256-3des-sha1-modp1024!
+    esp=aes256-sha1
+    dpdaction=clear
+    dpddelay=300s
+    rekey=no
+
+    left=%any
+    leftid=@irongatevpn.p-e.kr
+    #leftid=172.31.7.66
+    leftsubnet=0.0.0.0/0
+    #leftauth=pubkey
+    leftcert=cert.pem
+    #leftcert=server-cert.pem
+    #leftfirewall=yes
+    leftsendcert=always
+
+    right=%any
+    rightid=%any
+    rightauth=eap-mschapv2
+    #rightfirewall=yes
+    rightsourceip=10.10.10.0/24
+    #rightdns=8.8.8.8,8.8.4.4
+    rightdns=8.8.8.8
+    rightsendcert=never
+    eap_identity=%identity
+
+
+3-2. /etc/ipsec.secrets 
+# This file holds shared secrets or RSA private keys for authentication.
+
+# RSA private key for this host, authenticating it to any other host
+# which knows the public part.
+
+#: RSA "server-key.pem"
+#irongatevpn.p-e.kr : RSA "server-key.pem"
+#: RSA "privkey.pem"
+irongatevpn.p-e.kr : RSA "privkey.pem"
+172.30.1.61 172.30.1.62 : PSK "abcde"
+win10 : EAP "win10!"
+android : EAP "android1!"
+
+
+4. ufw 방화벽 설정
+
+4-1. 기본 설정
+ufw allow OpenSSH
+ufw allow 500,4500/udp
+
+4-2 nat 설정. /etc/ufw/before.rules
+# *filter 항목 앞에 추가
+
+*nat
+-A POSTROUTING -s 10.10.10.0/24 -o eth0 -m policy --pol ipsec --dir out -j ACCEPT
+-A POSTROUTING -s 10.10.10.0/24 -o eth0 -j MASQUERADE
+COMMIT
+
+*mangle
+-A FORWARD --match policy --pol ipsec --dir in -s 10.10.10.0/24 -o eth0 -p tcp -m tcp --tcp-flags SYN,RST SYN -m tcpmss --mss 1361:1536 -j TCPMSS --set-mss 1360
+COMMIT
+
+# *filter 항목 뒤에 추가
+
+-A ufw-before-forward --match policy --pol ipsec --dir in --proto esp -s 10.10.10.0/24 -j ACCEPT
+-A ufw-before-forward --match policy --pol ipsec --dir out --proto esp -d 10.10.10.0/24 -j ACCEPT
+
+4-3. /etc/ufw/sysctl.conf 추가(수정)
+
+net/ipv4/ip_forward=1
+net/ipv4/conf/all/accept_redirects=0
+net/ipv4/conf/all/send_redirects=0
+net/ipv4/ip_no_pmtu_disc=1
+
+
+4-4. 적용
+ufw enable
+
+
+5. ufw을 사용하지 않고, 수동으로 NAT 설정
+
+5-1. nat
+sudo iptables -t nat -A POSTROUTING -s 10.10.10.0/24 -o eth0 -m policy --dir out --pol ipsec -j ACCEPT
+sudo iptables -t nat -A POSTROUTING -s 10.10.10.0/24 -o eth0 -j MASQUERADE
+sudo iptables -t mangle -A FORWARD -s 10.10.10.0/24 -o eth0 -p tcp -m policy --dir in --pol ipsec -m tcp --tcp-flags SYN,RST SYN -m tcpmss --mss 1361:1536 -j TCPMSS --set-mss 1360
+
+5-2. /etc/sysctl.conf
+
+net.ipv4.ip_forward = 1
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.all.send_redirects = 0
+net.ipv4.conf.default.rp_filter = 0
+net.ipv4.conf.default.accept_source_route = 0
+net.ipv4.conf.default.send_redirects = 0
+net.ipv4.icmp_ignore_bogus_error_responses = 1
+
+5-3. 적용
+sysctl -p
+sysctl --system
+
+
+6. 도메인 생성
+https://xn--220b31d95hq8o.xn--3e0b707e/page/domain_conf_list.php
+
+* 도메인 등록 및 IP 등록
+** domain name: irongatevpn.p-e.kr
+** IP를 수정 한다.
+
+
+7. aws security group
+http
+https
+ssh
+ah(51)
+udp 500,4500
+icmp all
+
+8. 참고 링크
+https://kimtc.tistory.com/21
+https://github.com/jawj/IKEv2-setup/blob/master/setup.sh
+strongswan client 설정 방법: http://coreavpn.net/docs/droid.htm
+
+
