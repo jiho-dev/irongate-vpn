@@ -18,8 +18,11 @@ apt -y upgrade
 apt -y install strongswan strongswan-pki libcharon-extra-plugins libstrongswan-extra-plugins
 apt -y install strongswan-swanctl charon-systemd
 
+# for strongMan
+apt -y install python-pip sqlite python3-distutils virtualenv
+
 # utility
-apt -y install rsyslog inetutils-ping
+apt -y install rsyslog inetutils-ping conntrack
 
 # 무료 인증서: let's encrypt
 apt -y install certbot
