@@ -19,6 +19,12 @@ But in China, use the link to download it: https://download.strongswan.org/Andro
 * CA certificate: select automatically
 * Profile name: irongatevpn
 
+# VPN Service settings for iPhone (Alpha test)
+* TBA
+
+# VPN Service settings for Windws 10 (Alpha test)
+* TBA
+
 # How to use
 * git clone https://github.com/jhjgithub/irongate-vpn.git
 * cd irongate-vpn
