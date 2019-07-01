@@ -5,6 +5,7 @@ irongate-vpn is VPN service using Strongswan. It uses IKEv2 as a basic Key Manag
 # How to use
 * git clone https://github.com/jhjgithub/irongate-vpn.git
 * cd irongate-vpn
+* chmod 777 *.sh
 * run init_system.sh
 
 # Todo
