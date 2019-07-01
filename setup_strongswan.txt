@@ -1,12 +1,14 @@
-
 strongswan 설치 순서
 
 참조 사이드: https://www.digitalocean.com/community/tutorials/how-to-set-up-an-ikev2-vpn-server-with-strongswan-on-ubuntu-18-04-2
 
 1. 패키지 설치
 apt update
+apt upgrade
+
 # IPSEC 설치
 apt install strongswan strongswan-pki libcharon-extra-plugins libstrongswan-extra-plugins
+apt install strongswan-swanctl charon-systemd
 
 # utility
 apt install rsyslog inetutils-ping
@@ -14,6 +16,8 @@ apt install rsyslog inetutils-ping
 # 무료 인증서: let's encrypt
 apt install certbot
 
+# cleaning
+apt autoremove
 
 2. 인증서 만들기
 
@@ -27,13 +31,39 @@ ipsec pki --pub --in ~/pki/private/server-key.pem --type rsa | ipsec pki --issue
 sudo cp -r ~/pki/* /etc/ipsec.d/
 
 2-2. 공짜 인증서(let's encrypt): gen_free_cert.sh 파일로 생성
-DNS="irongatevpn.p-e.kr"
-certbot certonly --standalone  -d $DNS
-cp /etc/letsencrypt/live/$DNS/cert.pem /etc/ipsec.d/certs/
-cp /etc/letsencrypt/live/$DNS/privkey.pem /etc/ipsec.d/private/
-cp /etc/letsencrypt/live/$DNS/fullchain.pem /etc/ipsec.d/cacerts/
-cp /etc/letsencrypt/live/$DNS/chain.pem /etc/ipsec.d/cacerts/
 
+#DNS="irongatevpn.p-e.kr"
+DNS="irongatevpn.kro.kr"
+
+# copy /etc/ssl/certs/DST_Root_CA_X3.pem
+LETS_CA_PEM="DST_Root_CA_X3.pem"
+ROOT_CA="/etc/ipsec.d/cacerts/$LETS_CA_PEM"
+SRC_ROOT_CA="/etc/ssl/certs/$LETS_CA_PEM"
+LIVE_DIR="/etc/letsencrypt/live/$DNS"
+SWANCTL_DIR="/etc/swanctl"
+
+
+certbot certonly -n --standalone  -d $DNS
+
+if [ -d $LIVE_DIR ]; then
+    echo "Copy cert files into ipsec.d"
+    cp $LIVE_DIR/cert.pem /etc/ipsec.d/certs/
+    cp $LIVE_DIR/fullchain.pem /etc/ipsec.d/certs/
+    cp $LIVE_DIR/privkey.pem /etc/ipsec.d/private/
+    cp $LIVE_DIR/chain.pem /etc/ipsec.d/cacerts/
+
+    if [ -d "$SWANCTL_DIR" ]; then
+        echo "Copy cert files into swanctl"
+        cp $LIVE_DIR/cert.pem $SWANCTL_DIR/x509/
+        cp $LIVE_DIR/fullchain.pem $SWANCTL_DIR/x509/
+        cp $LIVE_DIR/privkey.pem $SWANCTL_DIR/private/
+        cp $LIVE_DIR/chain.pem $SWANCTL_DIR/x509ca/
+    fi
+
+    #if [ ! -e $ROOT_CA ]; then
+    #    cp $SRC_ROOT_CA $ROOT_CA
+    #fi
+fi
 
 3. ipsec 설정
 
@@ -81,27 +111,54 @@ conn mobile
     keyexchange=ikev2
     fragmentation=yes
     forceencaps=yes
-    ike=aes256-sha1-modp1024
+    ike=aes256gcm16-sha256-ecp521,aes256-sha256-ecp384,aes256-sha1-modp1024,aes128-sha1-modp1024!
     #ike=aes256gcm16-sha256-ecp521,aes256-sha256-ecp384,aes256-3des-sha1-modp1024!
-    esp=aes256-sha1
+    #esp=aes256gcm16-sha256,aes256-3des-sha256-sha1!
+    dpdaction=clear
+    dpddelay=300s
+    rekey=no
+    left=%any
+    leftid=172.30.1.62
+    leftcert=server-cert.pem
+    leftsendcert=always
+    leftsubnet=0.0.0.0/0
+    right=%any
+    rightid=%any
+    rightauth=eap-mschapv2
+    #rightsourceip=0.0.0.0/0
+    rightsourceip=10.10.10.0/24
+    #rightdns=8.8.8.8,8.8.4.4
+    rightdns=8.8.8.8
+    rightsendcert=never
+    eap_identity=%identity
+
+conn mobile
+    auto=add
+    compress=no
+    type=tunnel
+    keyexchange=ikev2
+    fragmentation=yes
+    forceencaps=yes
+    ike=aes256gcm16-sha256-ecp521,aes256-sha256-ecp384,aes256-sha1-modp1024,aes128-sha1-modp1024!
+    #ike=aes256gcm16-sha256-ecp521,aes256-sha256-ecp384,aes256-3des-sha1-modp1024!
+    #esp=aes256gcm16-sha256,aes256-3des-sha256-sha1!
     dpdaction=clear
     dpddelay=300s
     rekey=no
 
     left=%any
-    leftid=@irongatevpn.p-e.kr
-    #leftid=172.31.7.66
-    leftsubnet=0.0.0.0/0
-    #leftauth=pubkey
-    leftcert=cert.pem
+    #leftid=172.30.1.62
     #leftcert=server-cert.pem
-    #leftfirewall=yes
+    leftid=@irongatevpn.kro.kr
+    #leftcert=cert.pem
+    leftcert=fullchain.pem
     leftsendcert=always
+    leftsubnet=0.0.0.0/0
 
     right=%any
     rightid=%any
     rightauth=eap-mschapv2
-    #rightfirewall=yes
+    #rightsourceip=0.0.0.0/0
     rightsourceip=10.10.10.0/24
     #rightdns=8.8.8.8,8.8.4.4
     rightdns=8.8.8.8
@@ -123,6 +180,113 @@ irongatevpn.p-e.kr : RSA "privkey.pem"
 win10 : EAP "win10!"
 android : EAP "android1!"
 
+3-3. /etc/swanctl/swanctl.conf
+
+# https://wiki.strongswan.org/projects/strongswan/wiki/UsableExamples
+
+connections {
+	rw-ikev2 {
+		unique=never 
+		version=2
+		dpd_delay=30s 
+		# iOS clients need this
+		send_cert=always
+		pools=pool-rw-ikev2
+		local {
+			auth=pubkey
+			id=irongatevpn.kro.kr
+            #certs=fullchain.pem
+			certs=cert.pem
+		}
+		remote {
+			# auth=pubkey
+			auth=eap-mschapv2
+			eap_id=%any
+		}
+		children {
+			rw-ikev2 {
+				local_ts=0.0.0.0/0
+				# Default settings omitted:
+				# start_action=none
+				# dpd_action=clear
+			}
+		}
+	}
+
+	rw-ikev1-psk-xauth {
+		version = 1
+        proposals=aes-sha1-modp1024 
+		rekey_time = 0s
+		pools = pool-rw-ikev2
+		dpd_delay = 30s
+		dpd_timeout = 90s
+        local-1 {
+            auth = psk
+        }
+        remote-1 {
+            auth = psk
+        }
+		remote-2 {
+			auth = xauth
+		}
+		children {
+			rw-ikev1-psk-xauth {
+				local_ts = 0.0.0.0/0
+				rekey_time = 0s
+				dpd_action = clear
+			}
+		}
+	}
+
+}
+
+pools {
+	pool-rw-ikev2 {
+    # max 65K clients
+		addrs=10.1.0.0/16
+    dns = 168.126.63.1, 8.8.8.8
+	}
+}
+
+# for secrets
+include conf.d/*.conf
+
+3-4. /etc/swanctl/conf.d/secrets.conf
+secrets {
+    ike-one {
+        secret = "psk123" 
+    }
+	# loaded automatically from /etc/swanctl/private/
+    private-rw {
+        file=/etc/swanctl/private/privkey.pem
+    }
+
+	eap-win10 {
+		id=win10
+		secret="win10" 
+	}
+
+	eap-win11 {
+		id=win11
+		secret="win11" 
+	}
+
+	xauth-win11 {
+		id=win11
+		secret="win11" 
+	}
+
+	eap-win12 {
+		id=win12
+		secret="win12" 
+	}
+
+	xauth-win12 {
+		id=win12
+		secret="win12" 
+	}
+}
+
 
 4. ufw 방화벽 설정
 
@@ -130,22 +294,31 @@ android : EAP "android1!"
 ufw allow OpenSSH
 ufw allow 500,4500/udp
 
+또는 /etc/ufw/user.rules 수정
+### RULES ###
+### tuple ### allow tcp 22 0.0.0.0/0 any 0.0.0.0/0 OpenSSH - in
+-A ufw-user-input -p tcp --dport 22 -j ACCEPT -m comment --comment 'dapp_OpenSSH'
+
+### tuple ### allow udp 500,4500 0.0.0.0/0 any 0.0.0.0/0 in
+-A ufw-user-input -p udp -m multiport --dports 500,4500 -j ACCEPT
+### END RULES ###
+
 4-2 nat 설정. /etc/ufw/before.rules
 # *filter 항목 앞에 추가
 
 *nat
--A POSTROUTING -s 10.10.10.0/24 -o eth0 -m policy --pol ipsec --dir out -j ACCEPT
--A POSTROUTING -s 10.10.10.0/24 -o eth0 -j MASQUERADE
+-A POSTROUTING -s 10.10.0.0/16 -o eth0 -m policy --pol ipsec --dir out -j ACCEPT
+-A POSTROUTING -s 10.10.0.0/16 -o eth0 -j MASQUERADE
 COMMIT
 
 *mangle
--A FORWARD --match policy --pol ipsec --dir in -s 10.10.10.0/24 -o eth0 -p tcp -m tcp --tcp-flags SYN,RST SYN -m tcpmss --mss 1361:1536 -j TCPMSS --set-mss 1360
+-A FORWARD --match policy --pol ipsec --dir in -s 10.10.0.0/16 -o eth0 -p tcp -m tcp --tcp-flags SYN,RST SYN -m tcpmss --mss 1361:1536 -j TCPMSS --set-mss 1360
 COMMIT
 
 # *filter 항목 뒤에 추가
 
--A ufw-before-forward --match policy --pol ipsec --dir in --proto esp -s 10.10.10.0/24 -j ACCEPT
--A ufw-before-forward --match policy --pol ipsec --dir out --proto esp -d 10.10.10.0/24 -j ACCEPT
+-A ufw-before-forward --match policy --pol ipsec --dir in --proto esp -s 10.10.0.0/16 -j ACCEPT
+-A ufw-before-forward --match policy --pol ipsec --dir out --proto esp -d 10.10.0.0/16 -j ACCEPT
 
 4-3. /etc/ufw/sysctl.conf 추가(수정)
 
@@ -154,6 +327,8 @@ net/ipv4/conf/all/accept_redirects=0
 net/ipv4/conf/all/send_redirects=0
 net/ipv4/ip_no_pmtu_disc=1
 
+4-4. /etc/default/ufw 
+IPV6=no  
 
 4-4. 적용
 ufw enable
@@ -162,9 +337,9 @@ ufw enable
 5. ufw을 사용하지 않고, 수동으로 NAT 설정
 
 5-1. nat
-sudo iptables -t nat -A POSTROUTING -s 10.10.10.0/24 -o eth0 -m policy --dir out --pol ipsec -j ACCEPT
-sudo iptables -t nat -A POSTROUTING -s 10.10.10.0/24 -o eth0 -j MASQUERADE
-sudo iptables -t mangle -A FORWARD -s 10.10.10.0/24 -o eth0 -p tcp -m policy --dir in --pol ipsec -m tcp --tcp-flags SYN,RST SYN -m tcpmss --mss 1361:1536 -j TCPMSS --set-mss 1360
+sudo iptables -t nat -A POSTROUTING -s 10.10.0.0/16 -o eth0 -m policy --dir out --pol ipsec -j ACCEPT
+sudo iptables -t nat -A POSTROUTING -s 10.10.0.0/16 -o eth0 -j MASQUERADE
+sudo iptables -t mangle -A FORWARD -s 10.10.0.0/16 -o eth0 -p tcp -m policy --dir in --pol ipsec -m tcp --tcp-flags SYN,RST SYN -m tcpmss --mss 1361:1536 -j TCPMSS --set-mss 1360
 
 5-2. /etc/sysctl.conf
 
@@ -197,7 +372,7 @@ ah(51)
 udp 500,4500
 icmp all
 
-8. windows 10 
+8. windows 10 인증서 추가
 
 8-1. root인증서 추가
 mmc.exe 실행
@@ -217,5 +392,50 @@ mmc.exe 실행
 https://kimtc.tistory.com/21
 https://github.com/jawj/IKEv2-setup/blob/master/setup.sh
 strongswan client 설정 방법: http://coreavpn.net/docs/droid.htm
+https://github.com/wuruxu/letsencrypt_strongswan_guide
+
+
+10. ubuntu 18.04 설정
+
+systemctl stop unattended-upgrades
+apt-get remove unattended-upgrades
+ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime
+
+systemctl stop lxcfs
+systemctl stop snapd 
+apt remove lxcfs snapd
+
+
+183.100.204.82
+172.30.1.62
+192.168.2.1
+168.126.63.1
+
+11. strongman 설치
+
+apt -y install python-pip sqlite python3-distutils virtualenv
+
+mkdir -p /var/www/
+cd /var/www
+
+git clone https://github.com/strongswan/strongMan.git
+cd strongMan
+./install.sh
+
+./run.py
+
+12. windows 10 알고리즘 옵션
+
+DWORD 값 만들기: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\RasMan\Parameters\NegotiateDH2048_AES256 
+값: 2
+0 (default)	disable AES-256-CBC and MODP-2048
+1	Enable AES-256-CBC and MODP-2048
+2	Enforce the usage of AES-256-CBC and MODP-2048
+
+13. 세션 정보 읽어 오기
+https://wiki.strongswan.org/issues/1009
+
+
+
 
 
