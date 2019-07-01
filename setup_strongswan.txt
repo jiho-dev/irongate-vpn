@@ -307,18 +307,18 @@ ufw allow 500,4500/udp
 # *filter 항목 앞에 추가
 
 *nat
--A POSTROUTING -s 10.10.0.0/16 -o eth0 -m policy --pol ipsec --dir out -j ACCEPT
--A POSTROUTING -s 10.10.0.0/16 -o eth0 -j MASQUERADE
+-A POSTROUTING -s 10.1.0.0/16 -o eth0 -m policy --pol ipsec --dir out -j ACCEPT
+-A POSTROUTING -s 10.1.0.0/16 -o eth0 -j MASQUERADE
 COMMIT
 
 *mangle
--A FORWARD --match policy --pol ipsec --dir in -s 10.10.0.0/16 -o eth0 -p tcp -m tcp --tcp-flags SYN,RST SYN -m tcpmss --mss 1361:1536 -j TCPMSS --set-mss 1360
+-A FORWARD --match policy --pol ipsec --dir in -s 10.1.0.0/16 -o eth0 -p tcp -m tcp --tcp-flags SYN,RST SYN -m tcpmss --mss 1361:1536 -j TCPMSS --set-mss 1360
 COMMIT
 
 # *filter 항목 뒤에 추가
 
--A ufw-before-forward --match policy --pol ipsec --dir in --proto esp -s 10.10.0.0/16 -j ACCEPT
--A ufw-before-forward --match policy --pol ipsec --dir out --proto esp -d 10.10.0.0/16 -j ACCEPT
+-A ufw-before-forward --match policy --pol ipsec --dir in --proto esp -s 10.1.0.0/16 -j ACCEPT
+-A ufw-before-forward --match policy --pol ipsec --dir out --proto esp -d 10.1.0.0/16 -j ACCEPT
 
 4-3. /etc/ufw/sysctl.conf 추가(수정)
 
@@ -337,9 +337,9 @@ ufw enable
 5. ufw을 사용하지 않고, 수동으로 NAT 설정
 
 5-1. nat
-sudo iptables -t nat -A POSTROUTING -s 10.10.0.0/16 -o eth0 -m policy --dir out --pol ipsec -j ACCEPT
-sudo iptables -t nat -A POSTROUTING -s 10.10.0.0/16 -o eth0 -j MASQUERADE
-sudo iptables -t mangle -A FORWARD -s 10.10.0.0/16 -o eth0 -p tcp -m policy --dir in --pol ipsec -m tcp --tcp-flags SYN,RST SYN -m tcpmss --mss 1361:1536 -j TCPMSS --set-mss 1360
+sudo iptables -t nat -A POSTROUTING -s 10.1.0.0/16 -o eth0 -m policy --dir out --pol ipsec -j ACCEPT
+sudo iptables -t nat -A POSTROUTING -s 10.1.0.0/16 -o eth0 -j MASQUERADE
+sudo iptables -t mangle -A FORWARD -s 10.1.0.0/16 -o eth0 -p tcp -m policy --dir in --pol ipsec -m tcp --tcp-flags SYN,RST SYN -m tcpmss --mss 1361:1536 -j TCPMSS --set-mss 1360
 
 5-2. /etc/sysctl.conf
 
