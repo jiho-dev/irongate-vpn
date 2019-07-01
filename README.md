@@ -17,7 +17,7 @@ But in China, use the link to download it
 * vpn server: irongatevpn.kro.kr
 * VPN type: IKEv2 EAP(Username/Password)
 * Username: vpnuser1
-* Password: ask me 
+* Password: ~~<ask me>~~   
 * CA certificate: select automatically
 * Profile name: irongatevpn
 </code></pre>
