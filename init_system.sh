@@ -22,7 +22,7 @@ apt -y install strongswan-swanctl charon-systemd
 apt -y install python-pip sqlite python3-distutils virtualenv
 
 # utility
-apt -y install rsyslog inetutils-ping
+apt -y install rsyslog inetutils-ping conntrack
 
 # 무료 인증서: let's encrypt
 apt -y install certbot
