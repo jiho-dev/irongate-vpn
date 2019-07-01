@@ -8,3 +8,7 @@ irongate-vpn is VPN service using Strongswan. It uses IKEv2 as a basic Key Manag
 
 # Todo
 * crontab should be modified to update Let's Encrypt certification in every 3 months
+
+# Android
+* Install strongswan client on Playstore
+* Or use the link to download it: https://download.strongswan.org/Android/strongSwan-2.1.1.apk
