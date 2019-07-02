@@ -28,8 +28,8 @@ But in China, use the link to download it
 ![Alt text](4.server_setup.jpg?raw=true "Setup server")
 
 ### VPN Service settings for iPhone (Alpha test)
-![Alt text](5.iphone_setup.png?raw=true)
-![Alt text](5.iphone_setup-eng.png?raw=true)
+![Alt text](5.iphone_setup.png?raw=true){: width="80%" height="80%"}
+![Alt text](5.iphone_setup-eng.png?raw=true){: width="80%" height="80%"}
 
 
 ### VPN Service settings for Windws 10 (Alpha test)
