@@ -19,7 +19,7 @@ But in China, use the link to download it
 * vpn server: irongatevpn.kro.kr
 * VPN type: IKEv2 EAP(Username/Password)
 * Username: vpnuser1
-* Password: ~~<ask me>~~   
+* Password: ~~(ask me)~~  
 * CA certificate: select automatically
 * Profile name: irongatevpn
 </code></pre>
@@ -28,7 +28,9 @@ But in China, use the link to download it
 ![Alt text](4.server_setup.jpg?raw=true "Setup server")
 
 ### VPN Service settings for iPhone (Alpha test)
-* TBA
+![Alt text](5.iphone_setup.png?raw=true)  
+![Alt text](5.iphone_setup-eng.png?raw=true)  
+
 
 ### VPN Service settings for Windws 10 (Alpha test)
 * TBA
