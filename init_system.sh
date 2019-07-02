@@ -82,6 +82,7 @@ if [ ! -d /etc/stunnel ]; then
 fi
 
 cp -f stunnel.conf /etc/stunnel/
+cp -f stunnel4 /etc/default/
 systemctl restart stunnel4
 
 git clone https://github.com/jhjgithub/strongMan.git

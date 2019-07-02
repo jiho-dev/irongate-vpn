@@ -4,7 +4,7 @@ irongate-vpn is VPN service using Strongswan. It uses IKEv2 as a basic Key Manag
 
 ### VPN Server
 * Server Name: irongatevpn.kro.kr
-* Web: http://www.irongatevpn.kro.kr:800
+* Web: https://www.irongatevpn.kro.kr
 
 ### VPN Service settings for Andriod (Alpha test)
 First, you have to install strongswan client Apps.  Follow the directions below.  
