@@ -19,7 +19,7 @@ apt -y install strongswan strongswan-pki libcharon-extra-plugins libstrongswan-e
 apt -y install strongswan-swanctl charon-systemd
 
 # for strongMan
-apt -y install python-pip sqlite python3-distutils virtualenv
+apt -y install python-pip sqlite python3-distutils virtualenv stunnel4
 
 # utility
 apt -y install rsyslog inetutils-ping conntrack
@@ -74,6 +74,15 @@ swanctl -q
 
 ###########
 ## setup webui
+
+cecho "### setup WebUI"
+
+if [ ! -d /etc/stunnel ]; then
+	mkdir -p /etc/stunnel
+fi
+
+cp -f stunnel.conf /etc/stunnel/
+systemctl restart stunnel4
 
 git clone https://github.com/jhjgithub/strongMan.git
 cd strongMan
