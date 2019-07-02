@@ -19,7 +19,7 @@ apt -y install strongswan strongswan-pki libcharon-extra-plugins libstrongswan-e
 apt -y install strongswan-swanctl charon-systemd
 
 # for strongMan
-apt -y install python-pip sqlite python3-distutils virtualenv stunnel4
+apt -y install python-pip sqlite python3-distutils virtualenv stunnel4 python3-pip
 
 # utility
 apt -y install rsyslog inetutils-ping conntrack
