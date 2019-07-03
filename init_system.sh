@@ -83,7 +83,16 @@ fi
 
 cp -f stunnel.conf /etc/stunnel/
 cp -f stunnel4 /etc/default/
-systemctl restart stunnel4
+cp -f stunnel4.service /lib/systemd/system/
+
+# remove old one
+systemctl stop stunnel4
+systemctl disable stunnel4
+#systemctl restart stunnel4
+
+# enable new one
+systemctl enable stunnel4.service
+systemctl start stunnel4.service
 
 git clone https://github.com/jhjgithub/strongMan.git
 cd strongMan
