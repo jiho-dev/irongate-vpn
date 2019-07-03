@@ -1,6 +1,9 @@
 #!/bin/bash
 #DNS="irongatevpn.p-e.kr"
 DNS="irongatevpn.kro.kr"
+WWW_DNS="www.irongatevpn.kro.kr"
+
+# letsencrypt certonly --webroot --webroot-path=/var/www/html -d irongatevpn.p-e.kr -d www.irongatevpn.p-e.kr
 
 # copy /etc/ssl/certs/DST_Root_CA_X3.pem
 LETS_CA_PEM="DST_Root_CA_X3.pem"
@@ -37,6 +40,7 @@ gen_cert() {
 	ufw allow 80/tcp
 
 	certbot certonly -m irongate11@gmail.com --agree-tos --standalone -n -d $DNS
+	# letsencrypt certonly --webroot --webroot-path=/var/www/html -d irongatevpn.p-e.kr -d www.irongatevpn.p-e.kr
 
 	ufw delete allow 80/tcp
 

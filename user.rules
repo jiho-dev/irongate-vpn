@@ -23,8 +23,8 @@
 ### tuple ### allow udp 500,4500 0.0.0.0/0 any 0.0.0.0/0 in
 -A ufw-user-input -p udp -m multiport --dports 500,4500 -j ACCEPT
 
-### tuple ### allow tcp 800 0.0.0.0/0 any 0.0.0.0/0 in
--A ufw-user-input -p tcp --dport 800 -j ACCEPT
+### tuple ### allow tcp 443 0.0.0.0/0 any 0.0.0.0/0 in
+-A ufw-user-input -p tcp --dport 443 -j ACCEPT
 
 ### END RULES ###
 
