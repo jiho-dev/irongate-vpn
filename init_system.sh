@@ -22,7 +22,7 @@ apt -y install strongswan-swanctl charon-systemd
 apt -y install python-pip sqlite python3-distutils virtualenv stunnel4 python3-pip
 
 # utility
-apt -y install rsyslog inetutils-ping conntrack
+apt -y install rsyslog inetutils-ping conntrack ctags
 
 # 무료 인증서: let's encrypt
 apt -y install certbot
@@ -54,6 +54,9 @@ cp /etc/swanctl/swanctl.conf /etc/swanctl/swanctl.conf.org
 cp swanctl.conf /etc/swanctl/swanctl.conf
 cp secrets.conf /etc/swanctl/conf.d/
 
+# logging
+cp charon-logging.conf charon-systemd.conf  /etc/strongswan.d/
+
 # ufw
 cecho "### setup firewall ###"
 cp before.rules /etc/ufw/
@@ -69,6 +72,7 @@ ufw --force enable
 
 ./gen_free_cert.sh -i
 
+systemctl restart strongswan-swanctl
 swanctl -r
 swanctl -q
 
