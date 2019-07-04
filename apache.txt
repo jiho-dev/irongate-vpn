@@ -1,0 +1,14 @@
+
+a2enmod ssl
+systemctl restart apache2
+a2enmod rewrite
+service apache2 restart
+
+letsencrypt certonly --webroot --webroot-path=/var/www/html -d irongatevpn.p-e.kr -d www.irongatevpn.p-e.kr
+
+SSLEngine on
+SSLCertificateFile /etc/letsencrypt/live/irongatevpn.p-e.kr/cert.pem
+SSLCertificateKeyFile /etc/letsencrypt/live/irongatevpn.p-e.kr/privkey.pem
+SSLCertificateChainFile /etc/letsencrypt/live/irongatevpn.p-e.kr/chain.pem
+
+
