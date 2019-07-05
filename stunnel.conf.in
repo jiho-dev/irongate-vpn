@@ -6,9 +6,9 @@ output = /var/log/stunnel.log
 #cert = /etc/letsencrypt/archive/irongatevpn.kro.kr/cert1.pem
 #key = /etc/letsencrypt/archive/irongatevpn.kro.kr/privkey1.pem
 
-cert = /etc/letsencrypt/live/irongatevpn.kro.kr/fullchain.pem
+cert = /etc/letsencrypt/live/$__DNS/fullchain.pem
 #cert = /etc/letsencrypt/live/irongatevpn.kro.kr/cert.pem
-key = /etc/letsencrypt/live/irongatevpn.kro.kr/privkey.pem
+key = /etc/letsencrypt/live/$__DNS/privkey.pem
 
 
 # https://www.stunnel.org/faq.html

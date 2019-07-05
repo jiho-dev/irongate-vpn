@@ -1,18 +1,20 @@
 #!/bin/bash
-#DNS="irongatevpn.p-e.kr"
-DNS="irongatevpn.kro.kr"
-WWW_DNS="www.irongatevpn.kro.kr"
+
+DNS_NAME=""
+#DNS_NAME="irongatevpn.p-e.kr"
+#DNS_NAME="irongatevpn.kro.kr"
 
 # letsencrypt certonly --webroot --webroot-path=/var/www/html -d irongatevpn.p-e.kr -d www.irongatevpn.p-e.kr
 
-# copy /etc/ssl/certs/DST_Root_CA_X3.pem
-LETS_CA_PEM="DST_Root_CA_X3.pem"
-ROOT_CA="/etc/ipsec.d/cacerts/$LETS_CA_PEM"
-SRC_ROOT_CA="/etc/ssl/certs/$LETS_CA_PEM"
-LIVE_DIR="/etc/letsencrypt/live/$DNS"
-SWANCTL_DIR="/etc/swanctl"
 
 copy_cert() {
+	# copy /etc/ssl/certs/DST_Root_CA_X3.pem
+	local LETS_CA_PEM="DST_Root_CA_X3.pem"
+	local ROOT_CA="/etc/ipsec.d/cacerts/$LETS_CA_PEM"
+	local SRC_ROOT_CA="/etc/ssl/certs/$LETS_CA_PEM"
+	local LIVE_DIR="/etc/letsencrypt/live/$DNS_NAME"
+	local SWANCTL_DIR="/etc/swanctl"
+
 	if [ -d $LIVE_DIR ]; then
 		echo "Copy cert files into ipsec.d"
 		cp $LIVE_DIR/cert.pem /etc/ipsec.d/certs/
@@ -37,9 +39,11 @@ copy_cert() {
 }
 
 gen_cert() {
+	local dns=$DNS_NAME
+	local www="www.$DNS_NAME"
 	ufw allow 80/tcp
 
-	certbot certonly -m irongate11@gmail.com --agree-tos --standalone -n -d $DNS
+	certbot certonly -m irongate11@gmail.com --agree-tos --standalone -n -d $dns -d $www
 	# letsencrypt certonly --webroot --webroot-path=/var/www/html -d irongatevpn.p-e.kr -d www.irongatevpn.p-e.kr
 
 	ufw delete allow 80/tcp
@@ -69,23 +73,54 @@ renew_cert() {
 	fi
 }
 
+print_usage() {
+	echo "gen_free_cert -d <your dns name> <-i | -r>"
+	echo "-i: install free certificate"
+	echo "-r: renew the certificate installed"
+	exit 1
+}
+
 ###########################
+CMD=""
 
 while [[ "$#" -gt 0 ]]; do 
 	case $1 in
+	-d) 
+		DNS_NAME="$2"
+		shift 2
+		;;
 	-i) 
-		gen_cert
+		CMD="gen"
 		shift
 		;;
 	-r) 
-		renew_cert
+		CMD="renew"
 		shift
 		;;
 	*) 
 		echo "Unknown parameter passed: $1"
-		exit 1
+		shift
 		;;
 	esac; 
-	shift; 
 done
 
+if [ "_$DNS_NAME" == "_" ]; then
+	echo "DNS_NAME is empyt"
+	print_usage
+fi
+
+if [ "$CMD" == "gen" ]; then
+	#echo $CMD
+	#echo "$DNS_NAME"
+	gen_cert
+elif [ "$CMD" == "renew" ]; then
+	#echo $CMD
+	#echo "$DNS_NAME"
+	renew_cert
+elif [ "_$CMD" == "_" ]; then
+	echo "No cmd, assign command"
+	print_usage
+else
+	echo "Unknown cmd: $CMD"
+	print_usage
+fi
