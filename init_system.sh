@@ -105,6 +105,9 @@ run_install() {
 	systemctl disable stunnel4
 	#systemctl restart stunnel4
 
+	rm -rf /var/run/stunnel4
+	rm -rf /var/log/stunnel4
+
 	# enable new one
 	systemctl enable stunnel4.service
 	systemctl start stunnel4.service
