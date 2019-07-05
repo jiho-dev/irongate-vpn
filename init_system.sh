@@ -56,6 +56,7 @@ run_install() {
 
 	# swanctl
 	cecho "### setup swanctl ###"
+	cat swanctl.conf.in | /bin/sed "s/\$__DNS/$DNS_NAME/g" > swanctl.conf
 	cp /etc/swanctl/swanctl.conf /etc/swanctl/swanctl.conf.org
 	cp swanctl.conf /etc/swanctl/swanctl.conf
 	cp secrets.conf /etc/swanctl/conf.d/
