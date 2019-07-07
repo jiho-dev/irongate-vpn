@@ -116,7 +116,11 @@ run_install() {
 	cd strongMan
 	./install.sh
 
-	# crontab 수정 하기
+	### log
+	rm -rf /var/log/stunnel4
+	cp -f irongatevpn rsyslog /etc/logrotate.d/
+
+	# 인증서 업데이트를 위해서 crontab 수정 하기
 
 }
 

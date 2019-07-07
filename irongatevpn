@@ -1,0 +1,52 @@
+
+/var/log/charon.log {
+	rotate 90
+	daily
+	missingok
+	notifempty
+	delaycompress
+	compress
+	postrotate
+		/usr/sbin/swanctl -r
+	endscript
+}
+
+/var/log/django.log {
+	rotate 90
+	daily
+	missingok
+	notifempty
+	delaycompress
+	compress
+	postrotate
+		systemctl restart strongMan
+	endscript
+}
+
+/var/log/stunnel.log {
+	rotate 90
+	daily
+	missingok
+	compress
+	delaycompress
+	notifempty
+	#create 640 stunnel4 stunnel4
+	sharedscripts
+	postrotate
+		/etc/init.d/stunnel4 reopen-logs > /dev/null
+	endscript
+}
+
+/var/log/ufw.log {
+	rotate 90
+	weekly
+	missingok
+	notifempty
+	compress
+	delaycompress
+	sharedscripts
+	postrotate
+		invoke-rc.d rsyslog rotate >/dev/null 2>&1 || true
+	endscript
+}
+
