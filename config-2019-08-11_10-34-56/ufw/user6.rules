@@ -1,0 +1,22 @@
+*filter
+:ufw6-user-input - [0:0]
+:ufw6-user-output - [0:0]
+:ufw6-user-forward - [0:0]
+:ufw6-before-logging-input - [0:0]
+:ufw6-before-logging-output - [0:0]
+:ufw6-before-logging-forward - [0:0]
+:ufw6-user-logging-input - [0:0]
+:ufw6-user-logging-output - [0:0]
+:ufw6-user-logging-forward - [0:0]
+:ufw6-after-logging-input - [0:0]
+:ufw6-after-logging-output - [0:0]
+:ufw6-after-logging-forward - [0:0]
+:ufw6-logging-deny - [0:0]
+:ufw6-logging-allow - [0:0]
+### RULES ###
+
+### END RULES ###
+
+### LOGGING ###
+### END LOGGING ###
+COMMIT
